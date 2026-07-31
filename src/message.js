@@ -5,9 +5,13 @@
   root.ListenMessage = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  // Discord での投稿者名。誰が編集したかは要約の側で伝える
+  const WEBHOOK_USERNAME = "文字起こし編集";
   const EMBED_COLOR = 0x5865f2;
-  const MAX_FIELDS = 10;
-  const MAX_FIELD_VALUE = 1024;
+  const MAX_CHANGES = 10;
+  const MAX_DESCRIPTION = 4096;
+  // 1 件が長すぎて他の変更を押し出さないよう、変更前後それぞれに上限を設ける
+  const MAX_TEXT = 400;
 
   const KIND_LABELS = {
     edit: "編集",
@@ -62,32 +66,28 @@
     return typeof change.start === "number";
   }
 
-  function buildFieldValue(change, episodeUrl) {
-    const link = hasTime(change)
-      ? `[▶ ${formatTimestamp(change.start)} から聴く](${episodeUrl}?t=${Math.floor(change.start)})`
-      : null;
-    // diff ブロックの囲みと行頭記号のぶんを見込んで予算を取る
-    const overhead = "```diff\n\n\n```\n".length + (link ? link.length : 0) + 8;
-    const budget = Math.max(40, MAX_FIELD_VALUE - overhead);
-    const half = Math.floor(budget / 2);
+  // 見出しそのものをリンクにして、再生位置へ飛ぶための行を別に持たせない
+  function buildHeading(change, episodeUrl) {
+    const label = KIND_LABELS[change.kind] || KIND_LABELS.other;
+    if (!hasTime(change)) return `**${label}**`;
 
-    const before = truncate(displayText(change.before), half);
-    const after = truncate(displayText(change.after), half);
-    const lines = [
+    const at = formatTimestamp(change.start);
+    return `[${at} ${label}](${episodeUrl}?t=${Math.floor(change.start)})`;
+  }
+
+  function buildBlock(change, episodeUrl) {
+    const before = truncate(displayText(change.before), MAX_TEXT);
+    const after = truncate(displayText(change.after), MAX_TEXT);
+    return [
+      buildHeading(change, episodeUrl),
       "```diff",
       prefixLines(before, "-"),
       prefixLines(after, "+"),
       "```",
-    ];
-    if (link) lines.push(link);
-    const value = lines.join("\n");
-
-    return value.length <= MAX_FIELD_VALUE
-      ? value
-      : `${value.slice(0, MAX_FIELD_VALUE - 1)}…`;
+    ].join("\n");
   }
 
-  function buildDescription(changes, omittedCount) {
+  function buildSummary(changes, omittedCount, displayName) {
     const kinds = new Set(changes.map((c) => c.kind));
     const describe =
       kinds.size === 1
@@ -95,7 +95,29 @@
         : KIND_DESCRIPTIONS.other;
 
     const base = describe(changes.length);
-    return omittedCount > 0 ? `${base} (ほか ${omittedCount} 件は省略)` : base;
+    const summary =
+      omittedCount > 0 ? `${base} (ほか ${omittedCount} 件は省略)` : base;
+    return displayName ? `${displayName}が ${summary}` : summary;
+  }
+
+  // 要約の文言は省略件数によって変わるので、先に本文を積んでから頭に付ける。
+  // 要約の長さぶんは余裕を見て確保しておく。
+  function buildDescription(changes, episodeUrl, displayName) {
+    const budget = MAX_DESCRIPTION - 120;
+    const blocks = [];
+    let used = 0;
+
+    for (const change of changes.slice(0, MAX_CHANGES)) {
+      const block = buildBlock(change, episodeUrl);
+      if (used + block.length + 2 > budget) break;
+      blocks.push(block);
+      used += block.length + 2;
+    }
+
+    const omitted = changes.length - blocks.length;
+    const summary = buildSummary(changes, omitted, displayName);
+    const body = blocks.join("\n\n");
+    return body ? `${summary}\n\n${body}` : summary;
   }
 
   function buildDiscordPayload(input) {
@@ -109,31 +131,20 @@
       now,
     } = input;
 
-    const shown = changes.slice(0, MAX_FIELDS);
-    const omitted = changes.length - shown.length;
-
-    const embed = {
-      author: { name: programLabel },
-      title: episodeTitle,
-      url: episodeUrl,
-      color: EMBED_COLOR,
-      description: buildDescription(changes, omitted),
-      fields: shown.map((change) => {
-        const label = KIND_LABELS[change.kind] || KIND_LABELS.other;
-        return {
-          name: hasTime(change)
-            ? `${formatTimestamp(change.start)} ${label}`
-            : label,
-          value: buildFieldValue(change, episodeUrl),
-        };
-      }),
-      footer: { text: SOURCE_LABELS[source] || SOURCE_LABELS.editor },
-      timestamp: now,
+    return {
+      username: WEBHOOK_USERNAME,
+      embeds: [
+        {
+          author: { name: programLabel },
+          title: episodeTitle,
+          url: episodeUrl,
+          color: EMBED_COLOR,
+          description: buildDescription(changes, episodeUrl, displayName),
+          footer: { text: SOURCE_LABELS[source] || SOURCE_LABELS.editor },
+          timestamp: now,
+        },
+      ],
     };
-
-    const payload = { embeds: [embed] };
-    if (displayName) payload.username = displayName;
-    return payload;
   }
 
   return { buildDiscordPayload, formatTimestamp };

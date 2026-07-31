@@ -6,30 +6,35 @@
 
   // ---- ページ情報 --------------------------------------------------------
 
-  function textOfLinkTo(path) {
-    const link =
-      document.querySelector(`a[href="${path}"]`) ||
-      document.querySelector(`a[href$="${path}"]`);
-    return link ? link.textContent.trim() : null;
+  // パンくずのリンク文字列は LISTEN 側で 30 文字ほどに切り詰められる
+  // (末尾が ".." になる)。同じ先へのリンクは複数あるので、最も長い表記を採る。
+  function longestTextOfLinksTo(path) {
+    const texts = Array.from(document.querySelectorAll(`a[href$="${path}"]`))
+      .map((a) => a.textContent.trim())
+      .filter(Boolean);
+    if (!texts.length) return null;
+    return texts.reduce((longest, t) => (t.length > longest.length ? t : longest));
   }
 
   function programLabel(programSlug) {
-    return textOfLinkTo(`/p/${programSlug}`) || programSlug;
+    return longestTextOfLinksTo(`/p/${programSlug}`) || programSlug;
   }
 
   function episodeTitle(parsed, label) {
-    const fromLink = textOfLinkTo(`/p/${parsed.programSlug}/${parsed.episodeSlug}`);
-    if (fromLink) return fromLink;
-
+    // 見出しには切り詰められていない全文が入っている
     const heading = document.querySelector("h1");
     if (heading && heading.textContent.trim()) return heading.textContent.trim();
 
-    // 最後の手段としてタイトルから組み立てる
     let title = document.title
       .replace(/^文字起こしエディタ - /, "")
       .replace(/ - LISTEN$/, "");
     if (label) title = title.replace(new RegExp(` - ${escapeRegExp(label)}$`), "");
-    return title;
+    if (title) return title;
+
+    return (
+      longestTextOfLinksTo(`/p/${parsed.programSlug}/${parsed.episodeSlug}`) ||
+      parsed.episodeSlug
+    );
   }
 
   function escapeRegExp(text) {
