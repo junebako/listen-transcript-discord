@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>LISTEN 文字起こし編集 Discord 通知</title>
+    <link rel="stylesheet" href="src/ui.css" />
+  </head>
+  <body class="popup">
+    <h1>文字起こし編集の通知</h1>
+
+    <label class="row">
+      <input type="checkbox" id="enabled" />
+      <span>通知を有効にする</span>
+    </label>
+
+    <label class="field">
+      <span>表示名</span>
+      <input type="text" id="displayName" placeholder="Discord に表示される名前" />
+    </label>
+
+    <section id="programSection" hidden>
+      <h2 id="programLabel"></h2>
+      <p class="slug" id="programSlug"></p>
+
+      <label class="field">
+        <span>Discord Webhook URL</span>
+        <input
+          type="text"
+          id="webhookUrl"
+          placeholder="https://discord.com/api/webhooks/..."
+        />
+      </label>
+
+      <div class="row">
+        <button id="save" class="primary">この番組を登録</button>
+        <button id="remove" hidden>登録を解除</button>
+      </div>
+    </section>
+
+    <p id="notice" class="notice" hidden></p>
+    <p id="status" class="status"></p>
+
+    <p class="footer"><a href="#" id="openOptions">登録済みの番組を管理する</a></p>
+
+    <script src="src/listen-url.js"></script>
+    <script src="src/settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

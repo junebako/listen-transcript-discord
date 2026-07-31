@@ -1,0 +1,9 @@
+{
+  "name": "listen-transcript-discord",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LISTEN の文字起こし編集内容を Discord に通知する Chrome 拡張機能",
+  "scripts": {
+    "test": "node --test"
+  }
+}

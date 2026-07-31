@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>LISTEN 文字起こし編集 Discord 通知 の設定</title>
+    <link rel="stylesheet" href="src/ui.css" />
+  </head>
+  <body class="options">
+    <h1>LISTEN 文字起こし編集 Discord 通知</h1>
+
+    <label class="row">
+      <input type="checkbox" id="enabled" />
+      <span>通知を有効にする</span>
+    </label>
+
+    <label class="field">
+      <span>表示名 — Discord での投稿者名になります</span>
+      <input type="text" id="displayName" placeholder="例: juneboku" />
+    </label>
+
+    <section>
+      <h2>登録済みの番組</h2>
+      <p class="notice">
+        文字起こしを編集すると、その番組の Webhook 先へ通知します。ここに無い番組では何も通知しません。
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>番組名</th>
+            <th>スラッグ</th>
+            <th>Webhook URL</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="programs"></tbody>
+      </table>
+      <p class="empty" id="empty" hidden>まだ登録がありません。</p>
+    </section>
+
+    <section>
+      <h2>番組を追加する</h2>
+      <label class="field">
+        <span>番組スラッグ — listen.style/p/<b>ここ</b>/... の部分</span>
+        <input type="text" id="newSlug" placeholder="例: foo-program" />
+      </label>
+      <label class="field">
+        <span>番組名 — 通知に表示されます (省略時はスラッグ)</span>
+        <input type="text" id="newLabel" placeholder="例: フー番組" />
+      </label>
+      <label class="field">
+        <span>Discord Webhook URL</span>
+        <input
+          type="text"
+          id="newWebhookUrl"
+          placeholder="https://discord.com/api/webhooks/..."
+        />
+      </label>
+      <button id="add" class="primary">追加する</button>
+    </section>
+
+    <p id="status" class="status"></p>
+
+    <script src="src/settings.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "LISTEN 文字起こし編集 Discord 通知",
+  "version": "0.1.0",
+  "description": "LISTEN の文字起こし編集内容を、番組ごとに指定した Discord Webhook へ通知する",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://listen.style/*",
+    "https://discord.com/api/webhooks/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://listen.style/p/*"],
+      "js": ["src/diff.js", "src/page-hook.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://listen.style/p/*"],
+      "js": ["src/listen-url.js", "src/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LISTEN 文字起こし編集 Discord 通知"
+  },
+  "options_page": "options.html"
+}
