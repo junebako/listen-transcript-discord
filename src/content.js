@@ -54,6 +54,28 @@
 
   // ---- 差分の中継 --------------------------------------------------------
 
+  // 拡張機能を更新すると、開いたままのページに残ったこのスクリプトは
+  // 拡張機能側と話せなくなる。黙って通知が飛ばなくなるのが一番困るので、
+  // 気づけるようにしておく。
+  let reloadNoticeShown = false;
+
+  function isExtensionAlive() {
+    try {
+      return Boolean(chrome.runtime && chrome.runtime.id);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function noticeReloadNeeded() {
+    if (reloadNoticeShown) return;
+    reloadNoticeShown = true;
+    showToast(
+      "拡張機能が更新されました。このページを再読み込みすると通知が再開します",
+      true,
+    );
+  }
+
   window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     const data = event.data;
@@ -62,29 +84,40 @@
     const info = pageInfo();
     if (!info || !info.episodeSlug) return;
 
-    chrome.runtime.sendMessage(
-      {
-        type: "LTD_CHANGES",
-        source: data.source,
-        changes: data.changes,
-        programSlug: info.programSlug,
-        programLabel: info.programLabel,
-        episodeTitle: info.episodeTitle,
-        episodeUrl: info.episodeUrl,
-      },
-      (result) => {
-        if (chrome.runtime.lastError) {
-          console.warn(LOG_PREFIX, chrome.runtime.lastError.message);
-          return;
-        }
-        if (!result || result.skipped) return;
-        if (result.ok) {
-          showToast(`Discord に通知しました (${data.changes.length} 件)`, false);
-        } else {
-          showToast(`Discord への通知に失敗しました: ${result.error}`, true);
-        }
-      },
-    );
+    if (!isExtensionAlive()) {
+      noticeReloadNeeded();
+      return;
+    }
+
+    try {
+      chrome.runtime.sendMessage(
+        {
+          type: "LTD_CHANGES",
+          source: data.source,
+          changes: data.changes,
+          programSlug: info.programSlug,
+          programLabel: info.programLabel,
+          episodeTitle: info.episodeTitle,
+          episodeUrl: info.episodeUrl,
+        },
+        (result) => {
+          if (chrome.runtime.lastError) {
+            console.warn(LOG_PREFIX, chrome.runtime.lastError.message);
+            noticeReloadNeeded();
+            return;
+          }
+          if (!result || result.skipped) return;
+          if (result.ok) {
+            showToast(`Discord に通知しました (${data.changes.length} 件)`, false);
+          } else {
+            showToast(`Discord への通知に失敗しました: ${result.error}`, true);
+          }
+        },
+      );
+    } catch (e) {
+      console.warn(LOG_PREFIX, e.message);
+      noticeReloadNeeded();
+    }
   });
 
   // ---- popup からの問い合わせ --------------------------------------------
