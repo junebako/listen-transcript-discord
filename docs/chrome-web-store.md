@@ -62,7 +62,7 @@ npm run package
 
 ### プライバシーポリシー URL
 
-リポジトリの `PRIVACY.md` を公開 URL で参照できるようにして、その URL を入力する。
+https://github.com/junebako/listen-transcript-discord/blob/main/PRIVACY.md
 
 ## 必要な画像
 
