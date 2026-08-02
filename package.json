@@ -4,6 +4,7 @@
   "private": true,
   "description": "LISTEN の文字起こし編集内容を Discord に通知する Chrome 拡張機能",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "package": "rm -f listen-transcript-discord.zip && zip -r listen-transcript-discord.zip manifest.json popup.html popup.js options.html options.js src icons -x 'icons/icon.svg'"
   }
 }
