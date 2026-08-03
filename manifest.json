@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LISTEN 文字起こし編集 Discord 通知",
   "version": "0.1.0",
-  "description": "LISTEN の文字起こし編集内容を、番組ごとに指定した Discord Webhook へ通知する",
+  "description": "LISTEN の文字起こしを編集すると、その差分を番組ごとに設定した Discord Webhook へ自動で通知します。複数人での編集作業の共有が楽になります。",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
